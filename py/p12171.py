@@ -19,5 +19,6 @@ with open("words.txt") as f:
         else:
             l += 1
             prefect.extend(w)
-            prefectSort.extend([hash(w) for w in w])
+            prefectSort = [hash(w) for w in w]
+            print("p", prefectSort)
             print(l, w)
