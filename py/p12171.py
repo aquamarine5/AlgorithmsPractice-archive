@@ -9,7 +9,7 @@ def find(a, lst):
 with open("words.txt") as f:
     words = f.read().splitlines()
     prefect = [w for w in words if len(w) == 1]
-    prefectSort = [hash(w) for w in prefect]
+    prefectSort = prefect.copy()
     l = 1
     while True:
         w = [w for w in words if len(w) == l + 1 and find(w, prefectSort)]
