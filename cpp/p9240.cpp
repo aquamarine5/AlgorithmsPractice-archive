@@ -1,3 +1,8 @@
+/*
+ * @Author: aquamarine5 && aquamarine5_@outlook.com
+ * Copyright (c) 2025 by @aquamarine5, RC. All Rights Reversed.
+ * lovely lonely, but be a quokka.
+ */
 #include <iostream>
 #include <vector>
 using namespace std;
