@@ -16,10 +16,9 @@ while pd.empty() == False:
     p = pd.get()
     # print(p)
     result.add(p[0])
-    if p[0] in result:
-        for i in mp[p[0]]:
-            if p[1] + 1 <= k * 2:
-                pd.put([i, p[1] + 1])
+    for i in mp[p[0]]:
+        if (p[1] + 1 <= k * 2) and (i not in result):
+            pd.put([i, p[1] + 1])
 for i in result:
     ans += vl[i - 1]
 print(ans)
