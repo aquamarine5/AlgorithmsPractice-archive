@@ -2,6 +2,10 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
+private val CID_REGEX = Regex("""(?:^|[?&;,\s])cid=([^&;,\s]+)""", RegexOption.IGNORE_CASE)
+private val SC_REGEX = Regex("""(?:^|[?&;,\s])sc=([^&;,\s]+)""", RegexOption.IGNORE_CASE)
+private val HEX_REGEX = Regex("^[0-9a-fA-F]+$")
+
 data class CidScResult(
     val cid: String?,
     val sc: String?,
@@ -10,8 +14,8 @@ data class CidScResult(
 )
 
 private fun parseByKeys(text: String): Pair<String, String>? {
-    val cid = Regex("""(?:^|[?&;,\s])cid=([^&;,\s]+)""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
-    val sc = Regex("""(?:^|[?&;,\s])sc=([^&;,\s]+)""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)
+    val cid = CID_REGEX.find(text)?.groupValues?.get(1)
+    val sc = SC_REGEX.find(text)?.groupValues?.get(1)
     if (cid != null && sc != null) return cid to sc
     return null
 }
@@ -38,7 +42,7 @@ private fun decodeBase64(input: String): String? {
 }
 
 private fun decodeHex(input: String): String? {
-    if (input.length % 2 != 0 || !input.matches(Regex("^[0-9a-fA-F]+$"))) return null
+    if (input.length % 2 != 0 || !HEX_REGEX.matches(input)) return null
     return runCatching {
         val bytes = ByteArray(input.length / 2)
         for (i in bytes.indices) {
@@ -49,13 +53,16 @@ private fun decodeHex(input: String): String? {
 }
 
 fun tryDeriveCidSc(clientId: String): CidScResult {
-    val candidates = linkedMapOf<String, String>()
-    candidates["raw"] = clientId
-    candidates["urlDecoded"] = runCatching { URLDecoder.decode(clientId, StandardCharsets.UTF_8) }.getOrDefault(clientId)
-    decodeBase64(clientId)?.let { candidates["base64"] = it }
-    decodeHex(clientId)?.let { candidates["hex"] = it }
+    val decodedVersions = linkedMapOf<String, String>()
+    decodedVersions["raw"] = clientId
+    runCatching { URLDecoder.decode(clientId, StandardCharsets.UTF_8) }
+        .getOrNull()
+        ?.takeIf { it != clientId }
+        ?.let { decodedVersions["urlDecoded"] = it }
+    decodeBase64(clientId)?.let { decodedVersions["base64"] = it }
+    decodeHex(clientId)?.let { decodedVersions["hex"] = it }
 
-    for ((source, value) in candidates) {
+    for ((source, value) in decodedVersions) {
         parseByKeys(value)?.let { (cid, sc) ->
             return CidScResult(cid, sc, source, "Matched cid/sc key-value pattern.")
         }
@@ -74,7 +81,7 @@ fun tryDeriveCidSc(clientId: String): CidScResult {
 
 fun main(args: Array<String>) {
     if (args.isEmpty()) {
-        println("Usage: kotlin a.kt <clientId>")
+        println("Usage: <program> <clientId>")
         return
     }
     val result = tryDeriveCidSc(args[0])
